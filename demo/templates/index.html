@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Publication Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            display: block;
+            margin: 20px auto;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+        }
+        button {
+            display: block;
+            width: 200px;
+            margin: 10px auto;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        td.description {
+            word-wrap: break-word;
+        }
+        #outputTable {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Faculty Publication Summary</h1>
+
+    <!-- Upload Excel File Section -->
+    <input type="file" id="fileInput" accept=".xlsx, .xls">
+    <button onclick="handleUpload()">Upload Excel</button>
+
+    <!-- Table to Display Faculty Publications Summary -->
+    <table id="outputTable">
+        <thead>
+            <tr>
+                <th>Faculty Name</th>
+                <th>Paper Title</th>
+                <th style="width: 70%;">Description</th>
+                <th>Link</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <br/>
+
+    <!-- Button to Export to Excel -->
+    <button onclick="exportToExcel()">Export to Excel</button>
+    <!-- Button to Export to Word -->
+    <button onclick="exportToWord()">Export to Word</button>
+</div>
+
+<!-- Include XLSX and FileSaver Libraries for Excel and Word Processing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<script>
+    // Function to handle file upload and display table
+    function handleUpload() {
+        const fileInput = document.getElementById('fileInput').files[0];
+        const formData = new FormData();
+        formData.append('file', fileInput);
+
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            displayFacultySummary(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    // Function to display faculty publication summary in the table
+    function displayFacultySummary(data) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = ''; // Clear previous entries
+
+        data.forEach(row => {
+            const facultyName = row['Faculty Name'];
+            const paperTitle = row['Publication Title'];
+            const description = row['Description'];
+            const link = row['Link'];
+
+            if (!facultyName || !paperTitle) return; // Skip rows without valid data
+
+            const rowHtml = `
+                <tr>
+                    <td>${facultyName}</td>
+                    <td>${paperTitle}</td>
+                    <td class="description">${description}</td>
+                    <td><a href="${link}" target="_blank">${link}</a></td>
+                </tr>
+            `;
+            tableBody.insertAdjacentHTML('beforeend', rowHtml);
+        });
+
+        document.getElementById('outputTable').style.display = 'table';
+    }
+
+    // Function to export the table to Excel
+    function exportToExcel() {
+        const table = document.getElementById('outputTable');
+        const workbook = XLSX.utils.table_to_book(table);
+        XLSX.writeFile(workbook, 'Faculty_Publication_Summary.xlsx');
+    }
+
+    // Function to export the table to Word (using FileSaver)
+    function exportToWord() {
+        const table = document.getElementById('outputTable').outerHTML;
+        const blob = new Blob([table], {type: "application/msword"});
+        saveAs(blob, 'Faculty_Publication_Summary.doc');
+    }
+</script>
+
+</body>
+</html>
